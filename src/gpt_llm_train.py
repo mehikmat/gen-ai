@@ -104,6 +104,6 @@ train_losses, val_losses, tokens_seen = train_model_simple(
 )
 
 # [5] save trained model
-torch.save(model.state_dict(), "/Users/mehikmat/proj/gen-ai-rnn/model/gpt_llm_model.pth")
+torch.save(model.state_dict(), "/Users/mehikmat/proj/gen-ai/model/gpt_llm_model.pth")
 epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
 plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)

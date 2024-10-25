@@ -23,7 +23,7 @@ GPT_CONFIG_124M = {
 # load pre trained model
 model = GPTModel(GPT_CONFIG_124M)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.load_state_dict(torch.load("/Users/mehikmat/proj/gen-ai-rnn/model/gpt_llm_model.pth", map_location=device))
+model.load_state_dict(torch.load("/Users/mehikmat/proj/gen-ai/model/gpt_llm_model.pth", map_location=device))
 
 # prompt
 start_context = "I found the couple at tea beneath"
@@ -36,7 +36,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 token_ids = generate_text_simple(
     model=model,
     idx=text_to_token_ids(start_context, tokenizer).to(device),
-    max_new_tokens=2,
+    max_new_tokens=4,
     context_size=GPT_CONFIG_124M["context_length"]
 )
 
