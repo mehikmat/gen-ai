@@ -1,6 +1,7 @@
+from importlib.metadata import version
+
 import tiktoken
 import torch
-from importlib.metadata import version
 
 # import utilities
 from supplementary import (
@@ -30,7 +31,7 @@ GPT_CONFIG_124M = {
 }
 
 # [1] read raw text data
-with open("/data/the-verdict.txt", 'r', encoding="utf-8") as f:
+with open("/Users/mehikmat/proj/gen-ai/data/the-verdict.txt", 'r', encoding="utf-8") as f:
     text_data = f.read()
 
 # create GPT BPE tokenizer
