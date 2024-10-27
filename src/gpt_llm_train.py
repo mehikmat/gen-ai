@@ -70,7 +70,7 @@ val_loader = create_dataloader_v1(
 
 print("\nTrain loader:")
 for x, y in train_loader:
-    print(x.shape, y.shape)
+    print(x.share, y.shape)
 
 print("\nValidation loader:")
 for x, y in val_loader:
