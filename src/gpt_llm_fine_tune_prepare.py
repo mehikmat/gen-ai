@@ -1,11 +1,28 @@
 import json
 
+
+def format_input(entry):
+    instruction_text = (
+        f"Below is an instruction that describes a task. "
+        f"Write a response that appropriately completes the request."
+        f"\n\n### Instruction:\n{entry['instruction']}"
+    )
+
+    input_text = f"\n\n### Input:\n{entry['input']}" if entry["input"] else ""
+
+    return instruction_text + input_text
+
+
 # fine tuning
 file_path = "/Users/mehikmat/proj/gen-ai/data/instruction-data.json"
 
 with open(file_path, "r") as file:
     data = json.load(file)
 print("Number of entries:", len(data))
+
+# format data in alpaca format
+for entry in data:
+    entry["text"] = format_input(entry)
 
 train_portion = int(len(data) * 0.85)  # 85% for training
 test_portion = int(len(data) * 0.15)  # 15% for testing
