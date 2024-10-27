@@ -25,6 +25,10 @@ Output Layers.
 
 Softmax function.
 
-LLM Architecture
+Steps for Building LLMs
 -----------------
-![llm_arch.png](llm_arch.png)
+![llm_arch.png](llm_steps.png)
+
+GPT NN Algorithm Architecture
+--------------------
+![gpt_architecture.png](gpt_architecture.png)
