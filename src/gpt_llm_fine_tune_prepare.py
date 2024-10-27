@@ -21,8 +21,8 @@ with open(file_path, "r") as file:
 print("Number of entries:", len(data))
 
 # format data in alpaca format
-for entry in data:
-    entry["text"] = format_input(entry)
+for d in data:
+    d["text"] = format_input(d)
 
 train_portion = int(len(data) * 0.85)  # 85% for training
 test_portion = int(len(data) * 0.15)  # 15% for testing
