@@ -21,10 +21,10 @@ def format_input(entry):
 print("Input: " + str(test_data[0]))
 
 llm = LLM.load("microsoft/phi-2")
-response1 = llm.generate((test_data[0]))
+response1 = llm.generate(format_input(test_data[0]))
 print("Before fine tune: " + response1)
 
 del llm
 llm2 = LLM.load("out/finetune/lora/final/")
-response2 = llm2.generate("hello sir how are you")
+response2 = llm2.generate(format_input(test_data[0]))
 print("After fine tune: " + response2)
