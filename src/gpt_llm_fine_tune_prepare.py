@@ -14,7 +14,7 @@ def format_input(entry):
 
 
 # fine tuning
-file_path = "/Users/mehikmat/proj/gen-ai/data/instruction-data.json"
+file_path = "/data/phi-2/instruction-data.json"
 
 with open(file_path, "r") as file:
     data = json.load(file)

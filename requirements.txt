@@ -5,3 +5,7 @@ tensorflow~=2.18.0
 tqdm~=4.66.5
 numpy~=2.0.2
 litgpt~=0.5.2
+transformers~=4.46.1
+datasets~=3.1.0
+bitsandbytes ~=0.44.1
+peft~=0.13.2
