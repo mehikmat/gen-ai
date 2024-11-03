@@ -38,7 +38,7 @@ def collate_and_tokenize(data_batch):
                         return_tensors="np",
                         padding="max_length",
                         truncation=True,
-                        max_length=2048)
+                        max_length=400)
     encoded["labels"] = encoded["input_ids"]
     return encoded
 
@@ -46,10 +46,11 @@ def collate_and_tokenize(data_batch):
 # Setting up tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           add_eos_token=True,
+                                          padding_side="left",
+                                          add_bos_token=True,
+                                          use_fast=False,
                                           trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
-tokenizer.truncation_side = "left"
-tokenizer.padding_side = "right"
 
 # load data
 train_dataset = load_dataset('json',
@@ -110,8 +111,8 @@ model = prepare_model_for_kbit_training(model)
 print(model)
 
 peft_config = LoraConfig(
-    r=16,
-    lora_alpha=32,
+    r=8,
+    lora_alpha=16,
     lora_dropout=0.05,
     bias="none",
     task_type="CAUSAL_LM",
@@ -132,7 +133,7 @@ training_arguments = TrainingArguments(
     gradient_accumulation_steps=5,
     gradient_checkpointing=True,
     eval_strategy="steps",
-    learning_rate=5e-5,
+    learning_rate=5e-05,
     lr_scheduler_type="constant",
     warmup_ratio=0.03,
     max_grad_norm=0.3,
