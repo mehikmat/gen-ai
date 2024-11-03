@@ -1,13 +1,16 @@
 from importlib.metadata import version
+from sys import platform
 
+import torch
 from datasets import load_dataset
-from transformers import AutoTokenizer, BitsAndBytesConfig
+from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
+from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
+from trl import SFTTrainer
 
 # print version of libraries
 pkgs = ["transformers",
         "torch",
         "datasets",
-        "bitsandbytes",
         "peft"
         ]
 for p in pkgs:
@@ -15,22 +18,38 @@ for p in pkgs:
 
 model_name = "microsoft/phi-2"
 
-# Configuration to load model in 4-bit quantized
-bnb_config = BitsAndBytesConfig(load_in_4bit=True,
-                                bnb_4bit_quant_type='nf4',
-                                bnb_4bit_compute_dtype='float16',
-                                bnb_4bit_use_double_quant=True)
-# Loading model with compatible settings
-# model = AutoModelForCausalLM.from_pretrained(model_name,
-#                                              device_map='auto',
-#                                              quantization_config=bnb_config,
-#                                              trust_remote_code=True)
+
+def collate_and_tokenize(data_batch):
+    instruction = data_batch["instruction"][0].replace('"', r'\"')
+    inputs = data_batch["input"][0].replace('"', r'\"')
+    output = data_batch["output"][0].replace('"', r'\"')
+
+    # merging into one prompt for tokenization and training
+    prompt = f"""###System:
+    Answer the following question based on the given input.
+    ###Input:
+    {inputs}
+    ###Question:
+    {instruction}
+    ###Answer:
+    {output}"""
+
+    encoded = tokenizer(prompt,
+                        return_tensors="np",
+                        padding="max_length",
+                        truncation=True,
+                        max_length=2048)
+    encoded["labels"] = encoded["input_ids"]
+    return encoded
+
+
 # Setting up tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           add_eos_token=True,
                                           trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.truncation_side = "left"
+tokenizer.padding_side = "right"
 
 # load data
 train_dataset = load_dataset('json',
@@ -40,5 +59,102 @@ test_dataset = load_dataset('json',
                             data_dir='/Users/mehikmat/proj/gen-ai/data/phi-2',
                             split="train[1000:1100]")
 
-print(train_dataset)
-print(test_dataset)
+columns_to_remove = ["instruction", "input", "output"]
+tokenized_train_dataset = train_dataset.map(collate_and_tokenize,
+                                            batched=True,
+                                            batch_size=1,
+                                            remove_columns=columns_to_remove)
+
+tokenized_test_dataset = test_dataset.map(collate_and_tokenize,
+                                          batched=True,
+                                          batch_size=1,
+                                          remove_columns=columns_to_remove)
+
+# Configuration to load model in 4-bit quantized
+# Loading model with compatible settings
+# Note latest bitsandbytes is not supported in mac
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+if platform != "darwin":
+    from transformers import BitsAndBytesConfig
+
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+        bnb_4bit_use_double_quant=True,
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        pretrained_model_name_or_path=model_name,
+        quantization_config=bnb_config,
+        low_cpu_mem_usage=True,
+        device_map="auto"
+    )
+else:
+    model = AutoModelForCausalLM.from_pretrained(
+        pretrained_model_name_or_path=model_name,
+        trust_remote_code=True,
+        low_cpu_mem_usage=True,
+        device_map=device,
+    )
+
+model.resize_token_embeddings(len(tokenizer))
+model.config.use_cache = False
+model.config.pretraining_tp = 1
+model.config.window = 4096
+
+model.gradient_checkpointing_enable()
+model = prepare_model_for_kbit_training(model)
+
+print(model)
+
+peft_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM",
+    target_modules=[
+        'q_proj',
+        'k_proj',
+        'v_proj',
+        'dense',
+        'fc1',
+        'fc12'
+    ],
+    inference_mode=False
+)
+model = get_peft_model(model, peft_config)
+training_arguments = TrainingArguments(
+    output_dir="./FineTuned",
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=5,
+    gradient_checkpointing=True,
+    eval_strategy="steps",
+    learning_rate=5e-5,
+    lr_scheduler_type="constant",
+    warmup_ratio=0.03,
+    max_grad_norm=0.3,
+    save_strategy="epoch",
+    logging_dir="./logs",
+    logging_steps=50,
+    num_train_epochs=2,
+    group_by_length=True,
+    fp16=False,
+    push_to_hub=False,
+    adam_beta2=0.999,
+    do_train=True,
+)
+
+trainer = SFTTrainer(
+    model=model,
+    train_dataset=tokenized_train_dataset,
+    eval_dataset=tokenized_test_dataset,
+    peft_config=peft_config,
+    args=training_arguments,
+    tokenizer=tokenizer,
+)
+
+torch.cuda.empty_cache()
+# start training
+trainer.train()
