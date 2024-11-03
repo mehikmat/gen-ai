@@ -16,7 +16,7 @@ pkgs = ["transformers",
 for p in pkgs:
     print(f"{p} version: {version(p)}")
 
-model_name = "microsoft/phi-2"
+model_name = "openai-community/gpt2"
 
 
 def collate_and_tokenize(data_batch):
@@ -114,18 +114,15 @@ peft_config = LoraConfig(
     bias="none",
     task_type="CAUSAL_LM",
     target_modules=[
-        'q_proj',
-        'k_proj',
-        'v_proj',
-        'dense',
-        'fc1',
-        'fc12'
+        'c_attn',
+        'c_proj',
+        'c_fc',
     ],
     inference_mode=False
 )
 model = get_peft_model(model, peft_config)
 training_arguments = TrainingArguments(
-    output_dir="./FineTuned",
+    output_dir="./results",
     per_device_train_batch_size=2,
     gradient_accumulation_steps=5,
     gradient_checkpointing=True,
@@ -152,8 +149,12 @@ trainer = SFTTrainer(
     peft_config=peft_config,
     args=training_arguments,
     tokenizer=tokenizer,
+    max_seq_length=2024
 )
 
 torch.cuda.empty_cache()
 # start training
 trainer.train()
+
+# save trained model
+trainer.model.save_pretrained("/Users/mehikmat/proj/gen-ai/model/gpt124M_tuned")

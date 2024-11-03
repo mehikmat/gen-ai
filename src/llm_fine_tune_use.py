@@ -1,30 +1,38 @@
-import json
+from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from litgpt import LLM
+instruction_text = f"""Below is an instruction that describes a task.
+Write a response that appropriately completes the request."""
 
-with open("test.json", "r") as file:
-    test_data = json.load(file)
+model_name = "openai-community/gpt2"
+base_model = AutoModelForCausalLM.from_pretrained(
+        pretrained_model_name_or_path=model_name)
 
+model = PeftModel.from_pretrained(base_model, "/Users/mehikmat/proj/gen-ai/model/gpt124M_tuned")
+model = model.merge_and_unload()
 
-def format_input(entry):
-    instruction_text = (
-        f"Below is an instruction that describes a task. "
-        f"Write a response that appropriately completes the request."
-        f"\n\n### Instruction:\n{entry['instruction']}"
-    )
+# Setting up tokenizer
+tokenizer = AutoTokenizer.from_pretrained(model_name,
+                                          add_eos_token=True,
+                                          padding_side="right",
+                                          add_bos_token=True,
+                                          use_fast=False,
+                                          trust_remote_code=True)
+tokenizer.pad_token = tokenizer.eos_token
+prompt = f"""###System:
+    Answer the following question based on the given input.
+    ###Input:
+    "freind --> friend",
+    ###Question:
+    Evaluate the following phrase by transforming it into the spelling given.
+    ###Answer:
+    The spelling of the given phrase "freind" is incorrect, the correct spelling is "friend"."""
+encoded = tokenizer(prompt,
+                    return_tensors="pt",
+                    padding=True,
+                    return_attention_mask=False,
+                    truncation=True)
 
-    input_text = f"\n\n### Input:\n{entry['input']}" if entry["input"] else ""
-
-    return instruction_text + input_text
-
-
-print("Input: " + str(test_data[0]))
-
-llm = LLM.load("microsoft/phi-2")
-response1 = llm.generate(format_input(test_data[0]))
-print("Before fine tune: " + response1)
-
-del llm
-llm2 = LLM.load("out/finetune/lora/final/")
-response2 = llm2.generate(format_input(test_data[0]))
-print("After fine tune: " + response2)
+response = model.generate(**encoded, max_length=1000)
+result = tokenizer.batch_decode(response, skip_special_tokens=True)
+print(result)
