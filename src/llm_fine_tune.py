@@ -24,12 +24,16 @@ def collate_and_tokenize(data_batch):
     inputs = data_batch["input"][0].replace('"', r'\"')
     output = data_batch["output"][0].replace('"', r'\"')
 
+    if inputs == "":
+        inputs = instruction
+        instruction = ""
+
     # merging into one prompt for tokenization and training
     prompt = f"""###System: 
     {instruction}
     ###Input:
     {inputs}
-    ###Answer:
+    ###Output:
     {output}"""
 
     encoded = tokenizer(prompt,

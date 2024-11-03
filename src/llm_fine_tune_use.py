@@ -20,7 +20,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 prompt = f"""###System:
-    Convert 45 kilometers to meters.
+    What are the first 10 square numbers?
     ###Input:
     ###Output:
     """
@@ -33,3 +33,4 @@ encoded = tokenizer(prompt,
 response = model.generate(**encoded, max_length=1000)
 result = tokenizer.batch_decode(response, skip_special_tokens=True)
 print(result)
+print(tokenizer.batch_decode(base_model.generate(**encoded, max_length=1000), skip_special_tokens=True))
