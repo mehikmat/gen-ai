@@ -95,6 +95,7 @@ else:
         pretrained_model_name_or_path=model_name,
         trust_remote_code=True,
         low_cpu_mem_usage=True,
+        torch_dtype=torch.float16,
         device_map=device,
     )
 
