@@ -25,12 +25,10 @@ def collate_and_tokenize(data_batch):
     output = data_batch["output"][0].replace('"', r'\"')
 
     # merging into one prompt for tokenization and training
-    prompt = f"""###System:
-    Answer the following question based on the given input.
+    prompt = f"""###System: 
+    {instruction}
     ###Input:
     {inputs}
-    ###Question:
-    {instruction}
     ###Answer:
     {output}"""
 

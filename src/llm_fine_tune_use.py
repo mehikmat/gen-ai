@@ -6,7 +6,7 @@ Write a response that appropriately completes the request."""
 
 model_name = "openai-community/gpt2"
 base_model = AutoModelForCausalLM.from_pretrained(
-        pretrained_model_name_or_path=model_name)
+    pretrained_model_name_or_path=model_name)
 
 model = PeftModel.from_pretrained(base_model, "/Users/mehikmat/proj/gen-ai/model/gpt124M_tuned")
 model = model.merge_and_unload()
@@ -20,13 +20,10 @@ tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 prompt = f"""###System:
-    Answer the following question based on the given input.
+    Convert 45 kilometers to meters.
     ###Input:
-    "freind --> friend",
-    ###Question:
-    Evaluate the following phrase by transforming it into the spelling given.
-    ###Answer:
-    The spelling of the given phrase "freind" is incorrect, the correct spelling is "friend"."""
+    ###Output:
+    """
 encoded = tokenizer(prompt,
                     return_tensors="pt",
                     padding=True,
