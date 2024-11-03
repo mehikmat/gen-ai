@@ -20,8 +20,8 @@ tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 prompt = f"""###System:
-    What are the first 10 square numbers?
     ###Input:
+    What are the first 10 square numbers?
     ###Output:
     """
 encoded = tokenizer(prompt,
