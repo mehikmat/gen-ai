@@ -46,7 +46,7 @@ def collate_and_tokenize(data_batch):
 # Setting up tokenizer
 tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           add_eos_token=True,
-                                          padding_side="left",
+                                          padding_side="right",
                                           add_bos_token=True,
                                           use_fast=False,
                                           trust_remote_code=True)
@@ -101,6 +101,7 @@ else:
     )
 
 model.resize_token_embeddings(len(tokenizer))
+model.config.use_cache = False
 model.gradient_checkpointing_enable()
 model = prepare_model_for_kbit_training(model)
 
