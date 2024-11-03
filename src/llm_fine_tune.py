@@ -101,10 +101,6 @@ else:
     )
 
 model.resize_token_embeddings(len(tokenizer))
-model.config.use_cache = False
-model.config.pretraining_tp = 1
-model.config.window = 4096
-
 model.gradient_checkpointing_enable()
 model = prepare_model_for_kbit_training(model)
 
