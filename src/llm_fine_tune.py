@@ -7,7 +7,7 @@ from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments
 from trl import SFTTrainer
 
-# print version of libraries
+# print version of libraries to be used
 pkgs = ["transformers",
         "torch",
         "datasets",
@@ -45,7 +45,7 @@ def collate_and_tokenize(data_batch):
     return encoded
 
 
-# Setting up tokenizer
+# [1] Setting up tokenizer from model to be fine-tuned.
 tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           add_eos_token=True,
                                           padding_side="right",
@@ -54,7 +54,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name,
                                           trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 
-# load data
+# [2] load training data using data loaders: training, validation data
 train_dataset = load_dataset('json',
                              data_dir='/Users/mehikmat/proj/gen-ai/data/phi-2',
                              split="train[0:1000]")
@@ -78,6 +78,7 @@ tokenized_test_dataset = test_dataset.map(collate_and_tokenize,
 # Note latest bitsandbytes is not supported in mac
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# [3] Load the pre-trained model to be fine-tuned
 if platform != "darwin":
     from transformers import BitsAndBytesConfig
 
@@ -109,6 +110,7 @@ model = prepare_model_for_kbit_training(model)
 
 print(model)
 
+# [4] setup LoRA fine tuning configuration
 peft_config = LoraConfig(
     r=8,
     lora_alpha=16,
@@ -122,7 +124,9 @@ peft_config = LoraConfig(
     ],
     inference_mode=False
 )
+
 model = get_peft_model(model, peft_config)
+# [5] Setup training configuration
 training_arguments = TrainingArguments(
     output_dir="./results",
     per_device_train_batch_size=2,
@@ -144,6 +148,7 @@ training_arguments = TrainingArguments(
     do_train=True,
 )
 
+# [6] Setup SFT trainer using model, tokenizer, training data and tokenizer
 trainer = SFTTrainer(
     model=model,
     train_dataset=tokenized_train_dataset,
@@ -155,8 +160,8 @@ trainer = SFTTrainer(
 )
 
 torch.cuda.empty_cache()
-# start training
+# [7] Start training
 trainer.train()
 
-# save trained model
+# [8] Save trained model weights for later use ( later need to merge with base model)
 trainer.model.save_pretrained("/Users/mehikmat/proj/gen-ai/model/gpt124M_tuned")
